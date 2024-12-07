@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from werkzeug.utils import secure_filename
 import os
+from helper_functions.data_analysis_helper import analyze_file
 
 app = Flask(__name__)
 CORS(app)
@@ -17,7 +17,7 @@ ALLOWED_EXTENSIONS = {'csv', 'xlsx', 'txt', 'json'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Route to upload the file
+# Route to upload the file and analyze it
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -30,17 +30,22 @@ def upload_file():
 
     if file and allowed_file(file.filename):
         # Secure the filename to prevent directory traversal attacks
-        filename = secure_filename(file.filename)
         
         # Ensure the directory exists
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
             os.makedirs(app.config['UPLOAD_FOLDER'])
 
         # Save the file to the defined folder
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(file_path)
 
-        return jsonify({"message": "File successfully uploaded!", "file_path": file_path}), 200
+        # Use the helper function to process the file
+        result = analyze_file(file_path)
+
+        if result["success"]:
+            return jsonify({"message": "File successfully uploaded!", "analysis": result["summary"]}), 200
+        else:
+            return jsonify({"error": result["error"]}), 400
 
     else:
         return jsonify({"error": "File type not allowed"}), 400
