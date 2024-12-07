@@ -41,18 +41,34 @@ const handleFileChange = (newFile) => {
   console.log("File selected:", newFile);
 };
 
-// Upload the file (this can be adjusted to upload to a server or handle the file in another way)
-const uploadFile = () => {
+// Upload the file using Fetch API
+const uploadFile = async () => {
   if (file.value) {
-    // Example: Here you would send the file to your server using fetch, axios, etc.
-    console.log("Uploading file:", file.value);
+    // Create a FormData object to send the file in a POST request
+    const formData = new FormData();
+    formData.append("file", file.value); // Append the file to the FormData object
 
-    // Simulate file upload (replace this with real upload logic)
-    setTimeout(() => {
-      alert("File uploaded successfully!");
+    try {
+      const response = await fetch("http://127.0.0.1:5000/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert(`File uploaded successfully!`);
+        console.log(result);
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+
       // Reset the file input after successful upload
       file.value = null;
-    }, 1000);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("An error occurred during file upload.");
+    }
   } else {
     alert("No file selected!");
   }
